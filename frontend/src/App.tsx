@@ -1,21 +1,18 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 
-import { enviarPedido, ErroApi, listarRequisicoes } from "./api";
+import { ErroApi, enviarPedido, listarRequisicoes } from "./api";
 import { CartaoRequisicao } from "./CartaoRequisicao";
+import { Carregando } from "./Carregando";
+import { EstadoVazio } from "./EstadoVazio";
 import { FerramentasChamadas } from "./FerramentasChamadas";
 import { Historico } from "./Historico";
+import { IconeAlerta, IconeEnviar, IconeInfo, IconeLista, IconeRecibo, IconeRepetir } from "./Icones";
 import type { Requisicao, RespostaPedido } from "./tipos";
 
 type Mensagem =
   | { tipo: "usuario"; texto: string }
   | { tipo: "agente"; resposta: RespostaPedido }
-  | { tipo: "erro"; texto: string };
-
-const EXEMPLOS = [
-  "Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada.",
-  "Quero 2 smartphones de até US$ 300 cada.",
-  "Preciso de 5 laptops de no máximo US$ 500 cada.",
-];
+  | { tipo: "erro"; texto: string; pedido: string };
 
 function mensagemDeErro(erro: unknown): string {
   return erro instanceof ErroApi ? erro.message : "Erro inesperado. Tente novamente.";
@@ -27,7 +24,9 @@ export default function App() {
   const [carregando, setCarregando] = useState(false);
   const [historico, setHistorico] = useState<Requisicao[]>([]);
   const [erroHistorico, setErroHistorico] = useState<string | null>(null);
+  const [historicoAberto, setHistoricoAberto] = useState(false);
   const fimDaConversa = useRef<HTMLDivElement>(null);
+  const campo = useRef<HTMLTextAreaElement>(null);
 
   async function atualizarHistorico() {
     try {
@@ -43,12 +42,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    fimDaConversa.current?.scrollIntoView({ behavior: "smooth" });
+    fimDaConversa.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [mensagens, carregando]);
 
   async function enviar(pedido: string) {
     pedido = pedido.trim();
-    if (!pedido || carregando) return;
+    if (pedido.length < 3 || carregando) return;
 
     setMensagens((atuais) => [...atuais, { tipo: "usuario", texto: pedido }]);
     setTexto("");
@@ -58,9 +57,10 @@ export default function App() {
       setMensagens((atuais) => [...atuais, { tipo: "agente", resposta }]);
       if (resposta.requisicao) atualizarHistorico();
     } catch (erro) {
-      setMensagens((atuais) => [...atuais, { tipo: "erro", texto: mensagemDeErro(erro) }]);
+      setMensagens((atuais) => [...atuais, { tipo: "erro", texto: mensagemDeErro(erro), pedido }]);
     } finally {
       setCarregando(false);
+      campo.current?.focus();
     }
   }
 
@@ -69,76 +69,133 @@ export default function App() {
     enviar(texto);
   }
 
+  // Enter envia; Shift+Enter quebra a linha.
+  function aoTeclar(evento: KeyboardEvent<HTMLTextAreaElement>) {
+    if (evento.key === "Enter" && !evento.shiftKey && !evento.nativeEvent.isComposing) {
+      evento.preventDefault();
+      enviar(texto);
+    }
+  }
+
+  const podeEnviar = !carregando && texto.trim().length >= 3;
+
   return (
-    <div className="pagina">
-      <main className="chat">
-        <header>
-          <h1>Agente de compras</h1>
-          <p className="discreto">
-            Descreva o que precisa. O agente busca no catálogo, escolhe os itens e cria a requisição.
-          </p>
-        </header>
+    <div className="app">
+      <header className="barra">
+        <div className="marca">
+          <span className="marca-simbolo">
+            <IconeRecibo className="icone-18" />
+          </span>
+          <span className="marca-nome">Agente de compras</span>
+        </div>
+        <button
+          type="button"
+          className="botao-secundario so-celular"
+          onClick={() => setHistoricoAberto(true)}
+          aria-expanded={historicoAberto}
+        >
+          <IconeLista className="icone-18" />
+          Requisições
+          {historico.length > 0 && <span className="contador">{historico.length}</span>}
+        </button>
+      </header>
 
-        <section className="conversa">
-          {mensagens.length === 0 && (
-            <div className="exemplos">
-              <p className="discreto">Experimente:</p>
-              {EXEMPLOS.map((exemplo) => (
-                <button key={exemplo} type="button" onClick={() => enviar(exemplo)}>
-                  {exemplo}
-                </button>
-              ))}
-            </div>
-          )}
+      <div className="corpo">
+        <main className="chat">
+          <section className="conversa" aria-live="polite">
+            {mensagens.length === 0 && !carregando && <EstadoVazio aoEscolher={enviar} />}
 
-          {mensagens.map((m, i) => {
-            if (m.tipo === "usuario") {
-              return <div key={i} className="balao balao-usuario">{m.texto}</div>;
-            }
-            if (m.tipo === "erro") {
+            {mensagens.map((m, i) => {
+              if (m.tipo === "usuario") {
+                return (
+                  <div key={i} className="pedido">
+                    <p>{m.texto}</p>
+                  </div>
+                );
+              }
+
+              if (m.tipo === "erro") {
+                return (
+                  <div key={i} className="resposta">
+                    <div className="falha" role="alert">
+                      <IconeAlerta className="icone-20 falha-icone" />
+                      <div>
+                        <p className="falha-titulo">Não foi possível processar o pedido</p>
+                        <p className="falha-texto">{m.texto}</p>
+                        <button
+                          type="button"
+                          className="botao-secundario"
+                          onClick={() => enviar(m.pedido)}
+                          disabled={carregando}
+                        >
+                          <IconeRepetir className="icone-16" />
+                          Tentar de novo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              const { resposta, requisicao, ferramentas_chamadas } = m.resposta;
               return (
-                <div key={i} className="balao balao-erro" role="alert">
-                  <strong>Não foi possível processar o pedido.</strong>
-                  <p>{m.texto}</p>
+                <div key={i} className="resposta">
+                  {requisicao ? (
+                    <>
+                      <CartaoRequisicao requisicao={requisicao} />
+                      <p className="justificativa">{resposta}</p>
+                    </>
+                  ) : (
+                    <div className="sem-requisicao">
+                      <IconeInfo className="icone-20 sem-requisicao-icone" />
+                      <div>
+                        <p className="sem-requisicao-titulo">Nenhuma requisição foi criada</p>
+                        <p className="sem-requisicao-texto">{resposta}</p>
+                      </div>
+                    </div>
+                  )}
+                  <FerramentasChamadas chamadas={ferramentas_chamadas} />
                 </div>
               );
-            }
-            const { resposta, requisicao, ferramentas_chamadas } = m.resposta;
-            return (
-              <div key={i} className="balao balao-agente">
-                {requisicao ? (
-                  <CartaoRequisicao requisicao={requisicao} />
-                ) : (
-                  <span className="selo selo-alerta">Nenhuma requisição foi criada</span>
-                )}
-                <p className="texto-agente">{resposta}</p>
-                <FerramentasChamadas chamadas={ferramentas_chamadas} />
-              </div>
-            );
-          })}
+            })}
 
-          {carregando && (
-            <div className="balao balao-agente discreto">Consultando o catálogo e montando a requisição…</div>
-          )}
-          <div ref={fimDaConversa} />
-        </section>
+            {carregando && <Carregando />}
+            <div ref={fimDaConversa} />
+          </section>
 
-        <form className="entrada" onSubmit={aoEnviar}>
-          <input
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Ex.: Preciso de 3 laptops até US$ 2.000 cada"
-            maxLength={1000}
-            disabled={carregando}
-            aria-label="Pedido de compra"
-          />
-          <button type="submit" disabled={carregando || texto.trim().length < 3}>
-            Enviar
-          </button>
-        </form>
-      </main>
+          <form className="compositor" onSubmit={aoEnviar}>
+            <div className="compositor-caixa">
+              <textarea
+                ref={campo}
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                onKeyDown={aoTeclar}
+                placeholder="Ex.: 3 laptops até US$ 2.000 cada"
+                maxLength={1000}
+                rows={1}
+                disabled={carregando}
+                aria-label="Pedido de compra"
+              />
+              <button type="submit" className="botao-enviar" disabled={!podeEnviar} aria-label="Enviar pedido">
+                <IconeEnviar className="icone-20" />
+              </button>
+            </div>
+            <p className="compositor-dica">
+              <kbd>Enter</kbd> envia · <kbd>Shift</kbd>+<kbd>Enter</kbd> quebra a linha
+            </p>
+          </form>
+        </main>
 
-      <Historico requisicoes={historico} erro={erroHistorico} />
+        <Historico
+          requisicoes={historico}
+          erro={erroHistorico}
+          aberto={historicoAberto}
+          aoFechar={() => setHistoricoAberto(false)}
+        />
+        {historicoAberto && (
+          <div className="veu so-celular" onClick={() => setHistoricoAberto(false)} aria-hidden="true" />
+        )}
+      </div>
     </div>
   );
 }

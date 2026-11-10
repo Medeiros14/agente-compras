@@ -1,41 +1,41 @@
-import { formatarDolar } from "./formatar";
+import { formatarData, formatarDolar } from "./formatar";
+import { IconeCheck } from "./Icones";
 import type { Requisicao } from "./tipos";
 
-/** Mostra a requisição a partir dos dados gravados no banco (não do texto do LLM). */
+/** Comprovante da requisição, montado a partir dos dados gravados no banco (não do texto do LLM). */
 export function CartaoRequisicao({ requisicao }: { requisicao: Requisicao }) {
   return (
-    <div className="cartao">
-      <div className="cartao-titulo">
-        <span className="selo selo-ok">Requisição #{requisicao.id} criada</span>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th className="num">Qtd.</th>
-            <th className="num">Preço unit.</th>
-            <th className="num">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {requisicao.itens.map((item) => (
-            <tr key={item.produto_id}>
-              <td>
-                {item.titulo} <span className="discreto">(ID {item.produto_id})</span>
-              </td>
-              <td className="num">{item.quantidade}</td>
-              <td className="num">{formatarDolar(item.preco_unitario)}</td>
-              <td className="num">{formatarDolar(item.subtotal)}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={3}>Total</td>
-            <td className="num">{formatarDolar(requisicao.valor_total)}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+    <article className="comprovante" aria-label={`Requisição número ${requisicao.id}`}>
+      <header className="comprovante-topo">
+        <div>
+          <p className="comprovante-status">
+            <IconeCheck className="icone-16" />
+            Requisição criada
+          </p>
+          <h3 className="comprovante-numero">Nº {String(requisicao.id).padStart(4, "0")}</h3>
+        </div>
+        <time className="comprovante-data" dateTime={requisicao.criado_em}>
+          {formatarData(requisicao.criado_em)}
+        </time>
+      </header>
+
+      <ul className="comprovante-itens">
+        {requisicao.itens.map((item) => (
+          <li key={item.produto_id}>
+            <span className="item-titulo">{item.titulo}</span>
+            <span className="item-calculo">
+              {item.quantidade} × {formatarDolar(item.preco_unitario)}
+              <span className="item-id">ID {item.produto_id}</span>
+            </span>
+            <span className="item-subtotal">{formatarDolar(item.subtotal)}</span>
+          </li>
+        ))}
+      </ul>
+
+      <footer className="comprovante-total">
+        <span>Total</span>
+        <strong>{formatarDolar(requisicao.valor_total)}</strong>
+      </footer>
+    </article>
   );
 }
