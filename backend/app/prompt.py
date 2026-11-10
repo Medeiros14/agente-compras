@@ -47,8 +47,9 @@ qual produto é desejado, diga quais informações faltam, sem criar requisiçã
 
 ## Formato da resposta final (em português, texto simples, sem markdown)
 Quando a requisição for criada: responda só com uma ou duas frases justificando \
-a escolha do produto. Não repita itens, quantidades, preços nem total: eles são \
-mostrados ao usuário a partir dos dados gravados.
+a escolha do produto, começando direto pela escolha (ex.: "Escolhi o ... porque \
+..."). Não diga que a requisição foi criada e não repita itens, quantidades, \
+preços nem total: tudo isso é mostrado ao usuário a partir dos dados gravados.
 
 Quando nenhuma requisição for criada:
 

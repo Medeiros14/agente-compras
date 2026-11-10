@@ -178,4 +178,4 @@ Decisões e correções que saíram dessa revisão:
 - **Testes também para o `criar_requisicao`** e uma resposta explícita quando nenhuma requisição é criada.
 - **O agente não oferece ações futuras**, já que cada pedido é independente, e o texto não repete os itens que o cartão já mostra.
 
-**O que validei pessoalmente:** [vou preencher]
+**O que validei pessoalmente:** subi o projeto com `docker compose up --build`, testei pelo chat o pedido de exemplo, um pedido impossível (orçamento baixo) e pedidos meus fora do catálogo, conferi as ferramentas chamadas em cada resposta e li o loop do agente (`agente.py`) e as ferramentas do MCP (`server.py`) para entender cada decisão.
