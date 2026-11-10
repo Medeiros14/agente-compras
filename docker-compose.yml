@@ -23,7 +23,7 @@ services:
       DUMMYJSON_TIMEOUT: ${DUMMYJSON_TIMEOUT:-5}
       MCP_PORT: 8001
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     depends_on:
       db:
         condition: service_healthy
@@ -44,7 +44,7 @@ services:
       MCP_URL: http://mcp:8001/mcp
       DATABASE_URL: postgresql://${POSTGRES_USER:-compras}:${POSTGRES_PASSWORD:-compras}@db:5432/${POSTGRES_DB:-compras}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -59,7 +59,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       backend:
         condition: service_healthy

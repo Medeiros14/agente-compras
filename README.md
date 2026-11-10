@@ -114,6 +114,7 @@ Acertos: 5/5
 - **`mcp==1.30.0`.** Na linha 2.x do SDK o `FastMCP` foi renomeado para `MCPServer`, então fixei a última 1.x, em que o `FastMCP` é a API oficial.
 - **Valores em dólar sempre no formato `US$ 1.099,99`**: no cartão, nas mensagens de erro das ferramentas e no texto do agente (regra no prompt). Na API os valores continuam numéricos.
 - **SQL explícito com psycopg**, sem ORM: são duas tabelas, e o SQL fica visível e fácil de revisar.
+- **Portas presas ao localhost** (`127.0.0.1:8080`, `:8000`, `:8001`). Sem isso, qualquer máquina da rede poderia chamar o servidor MCP e executar `criar_requisicao` direto, sem passar pelo backend. Entre os containers, a comunicação segue pela rede interna do compose.
 - **nginx faz proxy de `/api` para o backend**, então não há CORS. Ele resolve o nome `backend` pelo DNS do Docker a cada requisição e por isso continua funcionando se o container for recriado.
 
 O prompt do agente está em [backend/app/prompt.py](backend/app/prompt.py), e as ferramentas em [mcp_server/app/server.py](mcp_server/app/server.py).
