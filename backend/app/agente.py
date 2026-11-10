@@ -58,24 +58,28 @@ def _erro_da_openrouter(e: openai.APIError) -> ErroApi:
     """Traduz a exceção do SDK numa mensagem clara para o usuário."""
     if isinstance(e, openai.AuthenticationError):
         return ErroApi(
-            502, "LLM_NAO_AUTORIZADO",
+            502,
+            "LLM_NAO_AUTORIZADO",
             "A OpenRouter recusou a chave de API. Verifique OPENROUTER_API_KEY no .env.",
         )
     if isinstance(e, openai.APITimeoutError):
         return ErroApi(
-            504, "LLM_TIMEOUT",
+            504,
+            "LLM_TIMEOUT",
             f"O modelo não respondeu em {config.LLM_TIMEOUT:g}s. Tente novamente.",
         )
     # 4xx (exceto 429): problema de configuração, não adianta repetir.
     status = getattr(e, "status_code", None)
     if status is not None and 400 <= status < 500 and status != 429:
         return ErroApi(
-            502, "LLM_CONFIGURACAO",
+            502,
+            "LLM_CONFIGURACAO",
             f"A OpenRouter recusou o pedido para o modelo '{config.OPENROUTER_MODEL}' "
             f"(HTTP {status}). Verifique OPENROUTER_MODEL e as configurações da conta.",
         )
     return ErroApi(
-        502, "LLM_INDISPONIVEL",
+        502,
+        "LLM_INDISPONIVEL",
         "Não foi possível falar com o modelo (OpenRouter). Tente novamente em instantes.",
     )
 
@@ -124,7 +128,14 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
                 }
 
             log.info("ferramenta=%s argumentos=%s ok=%s", nome, argumentos, resultado.get("ok"))
-            chamadas.append({"nome": nome, "argumentos": argumentos, "ok": bool(resultado.get("ok"))})
+            chamadas.append(
+                {
+                    "nome": nome,
+                    "argumentos": argumentos,
+                    "ok": bool(resultado.get("ok")),
+                    "erro": (resultado.get("erro") or {}).get("codigo"),
+                }
+            )
 
             # A única fonte da verdade sobre "requisição criada" é o resultado
             # da ferramenta, não o texto do modelo.
@@ -147,7 +158,8 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
             chamadas,
         )
     raise ErroApi(
-        502, "AGENTE_SEM_RESPOSTA",
+        502,
+        "AGENTE_SEM_RESPOSTA",
         f"O agente não chegou a uma resposta em {config.AGENTE_MAX_ITERACOES} passos. "
         "Tente reformular o pedido.",
     )
@@ -172,7 +184,8 @@ async def executar_agente(pedido: str) -> ResultadoAgente:
     except Exception as e:
         log.exception("Falha na comunicação com o servidor MCP")
         raise ErroApi(
-            503, "MCP_INDISPONIVEL",
+            503,
+            "MCP_INDISPONIVEL",
             "O servidor de ferramentas (MCP) não está disponível. Tente novamente em instantes.",
         ) from e
     raise erro_do_loop

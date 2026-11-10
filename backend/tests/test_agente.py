@@ -40,16 +40,27 @@ def ferramentas_falsas(respostas: dict):
 
 
 async def test_loop_executa_tools_pedidas_e_captura_requisicao():
-    llm = LLMFalso([
-        mensagem(tool_calls=[tool_call("1", "buscar_produtos", '{"termo": "laptop"}')]),
-        mensagem(tool_calls=[tool_call("2", "criar_requisicao",
-                                       '{"pedido": "x", "itens": [{"produto_id": 81, "quantidade": 3}]}')]),
-        mensagem(content="Requisição #7 criada."),
-    ])
-    executar, chamadas = ferramentas_falsas({
-        "buscar_produtos": {"ok": True, "produtos": [{"id": 81, "price": 1099.99}]},
-        "criar_requisicao": {"ok": True, "requisicao_id": 7},
-    })
+    llm = LLMFalso(
+        [
+            mensagem(tool_calls=[tool_call("1", "buscar_produtos", '{"termo": "laptop"}')]),
+            mensagem(
+                tool_calls=[
+                    tool_call(
+                        "2",
+                        "criar_requisicao",
+                        '{"pedido": "x", "itens": [{"produto_id": 81, "quantidade": 3}]}',
+                    )
+                ]
+            ),
+            mensagem(content="Requisição #7 criada."),
+        ]
+    )
+    executar, chamadas = ferramentas_falsas(
+        {
+            "buscar_produtos": {"ok": True, "produtos": [{"id": 81, "price": 1099.99}]},
+            "criar_requisicao": {"ok": True, "requisicao_id": 7},
+        }
+    )
 
     resultado = await agente.rodar_loop(llm, [], executar, "3 laptops")
 
@@ -64,10 +75,12 @@ async def test_loop_executa_tools_pedidas_e_captura_requisicao():
 
 
 async def test_loop_sem_criar_requisicao_devolve_requisicao_nula():
-    llm = LLMFalso([
-        mensagem(tool_calls=[tool_call("1", "buscar_produtos", '{"termo": "laptop"}')]),
-        mensagem(content="Nenhuma requisição foi criada. Motivo: o mais barato custa US$ 1099.99."),
-    ])
+    llm = LLMFalso(
+        [
+            mensagem(tool_calls=[tool_call("1", "buscar_produtos", '{"termo": "laptop"}')]),
+            mensagem(content="Nenhuma requisição foi criada. Motivo: o mais barato custa US$ 1099.99."),
+        ]
+    )
     executar, _ = ferramentas_falsas({"buscar_produtos": {"ok": True, "produtos": []}})
 
     resultado = await agente.rodar_loop(llm, [], executar, "3 laptops até US$ 100")
@@ -77,18 +90,23 @@ async def test_loop_sem_criar_requisicao_devolve_requisicao_nula():
 
 
 async def test_criar_requisicao_com_erro_nao_conta_como_criada():
-    llm = LLMFalso([
-        mensagem(tool_calls=[tool_call("1", "criar_requisicao", '{"pedido": "x", "itens": []}')]),
-        mensagem(content="Não foi possível criar."),
-    ])
-    executar, _ = ferramentas_falsas({
-        "criar_requisicao": {"ok": False, "erro": {"codigo": "ESTOQUE_INSUFICIENTE", "mensagem": "..."}},
-    })
+    llm = LLMFalso(
+        [
+            mensagem(tool_calls=[tool_call("1", "criar_requisicao", '{"pedido": "x", "itens": []}')]),
+            mensagem(content="Não foi possível criar."),
+        ]
+    )
+    executar, _ = ferramentas_falsas(
+        {
+            "criar_requisicao": {"ok": False, "erro": {"codigo": "ESTOQUE_INSUFICIENTE", "mensagem": "..."}},
+        }
+    )
 
     resultado = await agente.rodar_loop(llm, [], executar, "pedido")
 
     assert resultado.requisicao_id is None
     assert resultado.ferramentas_chamadas[0]["ok"] is False
+    assert resultado.ferramentas_chamadas[0]["erro"] == "ESTOQUE_INSUFICIENTE"
 
 
 async def test_loop_para_no_limite_de_iteracoes(monkeypatch):

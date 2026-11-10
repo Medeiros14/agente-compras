@@ -88,6 +88,22 @@ th { color: var(--discreto); font-weight: 500; }
 .num { text-align: right; white-space: nowrap; }
 tfoot td { font-weight: 700; border-bottom: none; }
 
+/* --- Ferramentas chamadas --- */
+.ferramentas { margin-top: 10px; font-size: 0.85rem; color: var(--discreto); }
+.ferramentas summary { cursor: pointer; }
+.ferramentas ol { margin: 6px 0 0; padding-left: 20px; }
+.ferramentas li { margin-bottom: 6px; }
+.ferramentas pre {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  background: var(--fundo);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.status-ok { color: var(--ok-texto); font-weight: 700; }
+.status-erro { color: var(--erro-texto); font-weight: 600; }
+
 /* --- Entrada --- */
 .entrada { display: flex; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--borda); }
 .entrada input {

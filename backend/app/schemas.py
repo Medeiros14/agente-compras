@@ -6,9 +6,11 @@ from pydantic import BaseModel, Field
 
 
 class PedidoEntrada(BaseModel):
-    pedido: str = Field(min_length=3, max_length=1000, examples=[
-        "Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada."
-    ])
+    pedido: str = Field(
+        min_length=3,
+        max_length=1000,
+        examples=["Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada."],
+    )
 
 
 class ItemRequisicao(BaseModel):
@@ -27,9 +29,19 @@ class Requisicao(BaseModel):
     itens: list[ItemRequisicao]
 
 
+class FerramentaChamada(BaseModel):
+    nome: str
+    argumentos: dict
+    ok: bool
+    erro: str | None = Field(default=None, description="Código do erro, quando ok é false.")
+
+
 class RespostaPedido(BaseModel):
     resposta: str = Field(description="Texto final do agente.")
     requisicao: Requisicao | None = Field(
         description="Requisição gravada, ou null quando o agente não criou nenhuma "
         "(o motivo está em `resposta`)."
+    )
+    ferramentas_chamadas: list[FerramentaChamada] = Field(
+        description="Ferramentas do MCP que o agente chamou, na ordem."
     )

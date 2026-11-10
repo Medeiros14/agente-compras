@@ -16,7 +16,15 @@ export interface Requisicao {
   itens: ItemRequisicao[];
 }
 
+export interface FerramentaChamada {
+  nome: string;
+  argumentos: Record<string, unknown>;
+  ok: boolean;
+  erro: string | null;
+}
+
 export interface RespostaPedido {
   resposta: string;
   requisicao: Requisicao | null;
+  ferramentas_chamadas: FerramentaChamada[];
 }

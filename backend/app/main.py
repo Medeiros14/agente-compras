@@ -35,7 +35,11 @@ async def criar_requisicao(entrada: PedidoEntrada) -> RespostaPedido:
     if resultado.requisicao_id is not None:
         requisicao = await db.obter_requisicao(resultado.requisicao_id)
 
-    return RespostaPedido(resposta=resultado.resposta, requisicao=requisicao)
+    return RespostaPedido(
+        resposta=resultado.resposta,
+        requisicao=requisicao,
+        ferramentas_chamadas=resultado.ferramentas_chamadas,
+    )
 
 
 @app.get("/requisicoes", response_model=list[Requisicao])

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { enviarPedido, ErroApi, listarRequisicoes } from "./api";
 import { CartaoRequisicao } from "./CartaoRequisicao";
+import { FerramentasChamadas } from "./FerramentasChamadas";
 import { Historico } from "./Historico";
 import type { Requisicao, RespostaPedido } from "./tipos";
 
@@ -102,7 +103,7 @@ export default function App() {
                 </div>
               );
             }
-            const { resposta, requisicao } = m.resposta;
+            const { resposta, requisicao, ferramentas_chamadas } = m.resposta;
             return (
               <div key={i} className="balao balao-agente">
                 {requisicao ? (
@@ -111,6 +112,7 @@ export default function App() {
                   <span className="selo selo-alerta">Nenhuma requisição foi criada</span>
                 )}
                 <p className="texto-agente">{resposta}</p>
+                <FerramentasChamadas chamadas={ferramentas_chamadas} />
               </div>
             );
           })}
