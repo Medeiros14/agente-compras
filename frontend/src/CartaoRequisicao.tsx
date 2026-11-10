@@ -20,8 +20,8 @@ export function CartaoRequisicao({ requisicao }: { requisicao: Requisicao }) {
       </header>
 
       <ul className="comprovante-itens">
-        {requisicao.itens.map((item) => (
-          <li key={item.produto_id}>
+        {requisicao.itens.map((item, indice) => (
+          <li key={indice}>
             <span className="item-titulo">{item.titulo}</span>
             <span className="item-calculo">
               {item.quantidade} × {formatarDolar(item.preco_unitario)}
