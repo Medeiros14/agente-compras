@@ -19,6 +19,10 @@ async function requisitar<T>(caminho: string, opcoes?: RequestInit): Promise<T> 
     const mensagem = corpo?.erro?.mensagem;
     if (mensagem) throw new ErroApi(mensagem);
     if (resposta.status === 422) throw new ErroApi("Pedido inválido: escreva entre 3 e 1000 caracteres.");
+    // 502/503/504 sem corpo JSON vêm do nginx: o backend não respondeu.
+    if ([502, 503, 504].includes(resposta.status)) {
+      throw new ErroApi("O backend não está respondendo. Tente novamente em instantes.");
+    }
     throw new ErroApi(`O servidor respondeu com erro (HTTP ${resposta.status}). Tente novamente.`);
   }
   return corpo as T;
