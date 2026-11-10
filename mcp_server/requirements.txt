@@ -1,0 +1,5 @@
+# mcp fixado na linha 1.x: é onde o FastMCP existe com esse nome
+# (na 2.x ele foi renomeado para MCPServer).
+mcp==1.30.0
+httpx==0.28.1
+psycopg[binary]==3.3.8
