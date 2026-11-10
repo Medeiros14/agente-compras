@@ -1,5 +1,21 @@
 # Agente de compras
 
+## Resumo
+
+```bash
+cp .env.example .env        # Windows: copy .env.example .env
+# coloque a sua OPENROUTER_API_KEY no .env
+docker compose up --build   # chat em http://localhost:8080
+```
+
+- **O modelo decide o fluxo:** o backend só roda o loop de tool calling com as ferramentas que o MCP lista.
+- **O preço vem da ferramenta, não do LLM:** `criar_requisicao` recebe só id e quantidade, consulta a DummyJSON e calcula o total.
+- **Erros como dado:** falhas viram `{"ok": false, "erro": {...}}` e o agente explica o problema ao usuário.
+
+O restante do README traz os detalhes.
+
+## O que é
+
 Você escreve no chat o que precisa, por exemplo *"Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada."*. O agente busca no catálogo da [DummyJSON](https://dummyjson.com/docs/products), escolhe os itens, grava uma requisição de compra no Postgres e mostra itens, quantidades, preço unitário e total. Se nada atender ao pedido, ele explica o que falta e não cria requisição.
 
 ```
