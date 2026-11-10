@@ -174,9 +174,7 @@ async def test_criar_requisicao_acima_do_orcamento_nao_grava(dummyjson, banco_fa
 async def test_criar_requisicao_timeout_da_dummyjson_nao_grava(dummyjson, banco_falso):
     dummyjson.get("/products/78").mock(side_effect=httpx.ReadTimeout("lento"))
 
-    resultado = await criar_requisicao(
-        pedido="3 laptops", itens=[ItemPedido(produto_id=78, quantidade=3)]
-    )
+    resultado = await criar_requisicao(pedido="3 laptops", itens=[ItemPedido(produto_id=78, quantidade=3)])
 
     assert resultado["ok"] is False
     assert resultado["erro"]["codigo"] == "DUMMYJSON_TIMEOUT"
@@ -191,9 +189,7 @@ async def test_criar_requisicao_banco_indisponivel(dummyjson, monkeypatch):
 
     monkeypatch.setattr(db, "salvar_requisicao", banco_fora)
 
-    resultado = await criar_requisicao(
-        pedido="3 laptops", itens=[ItemPedido(produto_id=78, quantidade=3)]
-    )
+    resultado = await criar_requisicao(pedido="3 laptops", itens=[ItemPedido(produto_id=78, quantidade=3)])
 
     assert resultado["ok"] is False
     assert resultado["erro"]["codigo"] == "BANCO_INDISPONIVEL"

@@ -38,16 +38,16 @@ async def _get(caminho: str, params: dict | None = None) -> dict | None:
             base_url=config.DUMMYJSON_URL, timeout=config.DUMMYJSON_TIMEOUT
         ) as client:
             resposta = await client.get(caminho, params=params)
-    except httpx.TimeoutException:
+    except httpx.TimeoutException as e:
         raise ErroDummyJSON(
             "DUMMYJSON_TIMEOUT",
             f"O catálogo de produtos (DummyJSON) não respondeu em {config.DUMMYJSON_TIMEOUT:g}s.",
-        )
-    except httpx.HTTPError:
+        ) from e
+    except httpx.HTTPError as e:
         raise ErroDummyJSON(
             "DUMMYJSON_INDISPONIVEL",
             "Não foi possível conectar ao catálogo de produtos (DummyJSON).",
-        )
+        ) from e
 
     if resposta.status_code == 404:
         return None
@@ -58,11 +58,11 @@ async def _get(caminho: str, params: dict | None = None) -> dict | None:
         )
     try:
         return resposta.json()
-    except ValueError:
+    except ValueError as e:
         raise ErroDummyJSON(
             "DUMMYJSON_RESPOSTA_INVALIDA",
             "O catálogo de produtos (DummyJSON) devolveu uma resposta inválida.",
-        )
+        ) from e
 
 
 async def buscar(termo: str) -> list[dict]:

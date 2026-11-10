@@ -12,6 +12,4 @@ MCP_TIMEOUT = float(os.getenv("MCP_TIMEOUT", "20"))
 
 AGENTE_MAX_ITERACOES = int(os.getenv("AGENTE_MAX_ITERACOES", "8"))
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://compras:compras@localhost:5432/compras"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://compras:compras@localhost:5432/compras")

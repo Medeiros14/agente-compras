@@ -41,9 +41,16 @@ curl -X POST http://localhost:8000/requisicoes \
     "id": 1, "pedido": "Preciso de 3 laptops...", "valor_total": 3299.97, "criado_em": "...",
     "itens": [{ "produto_id": 81, "titulo": "Lenovo Yoga 920", "quantidade": 3,
                 "preco_unitario": 1099.99, "subtotal": 3299.97 }]
-  }
+  },
+  "ferramentas_chamadas": [
+    { "nome": "buscar_produtos", "argumentos": { "termo": "laptop" }, "ok": true, "erro": null },
+    { "nome": "criar_requisicao", "argumentos": { "pedido": "...", "itens": [{ "produto_id": 81, "quantidade": 3 }],
+      "orcamento_unitario_max": 2000 }, "ok": true, "erro": null }
+  ]
 }
 ```
+
+O chat mostra essa lista de ferramentas, recolhida, abaixo de cada resposta.
 
 Quando o agente não cria requisição, `requisicao` vem `null` e `resposta` traz o motivo e uma sugestão. Falhas de infraestrutura voltam como `{"erro": {"codigo", "mensagem"}}`.
 
@@ -61,6 +68,26 @@ cd backend && pip install -r requirements-dev.txt && pytest
 
 Use Python 3.12. Sem Python local, rode dentro de um container:
 `docker run --rm -v "${PWD}/mcp_server:/app" -w /app python:3.12-slim sh -c "pip install -q -r requirements-dev.txt && pytest"`
+
+O GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) roda `ruff check`, `ruff format --check`, os dois conjuntos de testes e o build do frontend com checagem de tipos.
+
+### Avaliação do agente (com o LLM real)
+
+Com o ambiente no ar, [scripts/avaliar.py](scripts/avaliar.py) envia 5 pedidos: 3 possíveis e 2 impossíveis (orçamento baixo demais e estoque insuficiente). O script usa só a biblioteca padrão. Para os possíveis, cada item gravado é conferido direto na DummyJSON, sem confiar no agente: categoria, preço gravado igual ao do catálogo, estoque, quantidade mínima e orçamento.
+
+```bash
+python scripts/avaliar.py
+```
+
+```
+✓ 1. Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada.  (8s)
+     #9: 3x Lenovo Yoga 920, total US$ 3299.97 [buscar_produtos → criar_requisicao]
+...
+✓ 5. Preciso de 100 laptops até US$ 2.000 cada.  (6s)
+     não criou, como esperado [buscar_produtos]
+
+Acertos: 5/5
+```
 
 ## Decisões principais
 
@@ -118,6 +145,8 @@ db/init.sql          schema (requisicoes, itens_requisicao)
 mcp_server/          FastMCP: buscar_produtos, detalhar_produto, criar_requisicao + testes
 backend/             FastAPI: loop do agente, cliente MCP, prompt, endpoints + testes
 frontend/            React + Vite + TypeScript, servido por nginx
+scripts/avaliar.py   avaliação do agente com 5 pedidos
+.github/workflows/   CI: ruff, testes e build do frontend
 ```
 
 ## Como usei IA

@@ -57,9 +57,7 @@ async def buscar_produtos(termo: str) -> dict:
 
     resultado = {"ok": True, "termo": termo, "total": len(produtos), "produtos": produtos}
     if not produtos:
-        resultado["mensagem"] = (
-            f"Nenhum produto encontrado para '{termo}'. Tente um sinônimo em inglês."
-        )
+        resultado["mensagem"] = f"Nenhum produto encontrado para '{termo}'. Tente um sinônimo em inglês."
     return resultado
 
 
@@ -109,8 +107,7 @@ async def criar_requisicao(
         if item.quantidade > produto["stock"]:
             return erro(
                 "ESTOQUE_INSUFICIENTE",
-                f"'{titulo}' tem {produto['stock']} unidades em estoque; "
-                f"foram pedidas {item.quantidade}.",
+                f"'{titulo}' tem {produto['stock']} unidades em estoque; foram pedidas {item.quantidade}.",
             )
         if item.quantidade < produto["minimumOrderQuantity"]:
             return erro(
@@ -138,8 +135,7 @@ async def criar_requisicao(
     if orcamento_total_max is not None and valor_total > dinheiro(orcamento_total_max):
         return erro(
             "ORCAMENTO_EXCEDIDO",
-            f"O total seria US$ {valor_total}, acima do orçamento de "
-            f"US$ {dinheiro(orcamento_total_max)}.",
+            f"O total seria US$ {valor_total}, acima do orçamento de US$ {dinheiro(orcamento_total_max)}.",
         )
 
     try:
