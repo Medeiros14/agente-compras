@@ -109,6 +109,28 @@ async def test_criar_requisicao_com_erro_nao_conta_como_criada():
     assert resultado.ferramentas_chamadas[0]["erro"] == "ESTOQUE_INSUFICIENTE"
 
 
+async def test_segunda_criacao_de_requisicao_e_bloqueada():
+    criar = '{"pedido": "x", "itens": [{"produto_id": 81, "quantidade": 3}]}'
+    llm = LLMFalso(
+        [
+            mensagem(tool_calls=[tool_call("1", "criar_requisicao", criar)]),
+            mensagem(tool_calls=[tool_call("2", "criar_requisicao", criar)]),
+            mensagem(content="Escolhi o Lenovo Yoga 920."),
+        ]
+    )
+    executar, chamadas = ferramentas_falsas({"criar_requisicao": {"ok": True, "requisicao_id": 7}})
+
+    resultado = await agente.rodar_loop(llm, [], executar, "3 laptops")
+
+    # A segunda chamada não chegou à ferramenta (ao MCP)
+    assert [c[0] for c in chamadas] == ["criar_requisicao"]
+    assert resultado.requisicao_id == 7
+    assert resultado.ferramentas_chamadas[1]["ok"] is False
+    assert resultado.ferramentas_chamadas[1]["erro"] == "REQUISICAO_JA_CRIADA"
+    # O modelo recebeu o erro como resultado da tool call
+    assert "REQUISICAO_JA_CRIADA" in llm.recebido[-1]["messages"][-1]["content"]
+
+
 async def test_loop_para_no_limite_de_iteracoes(monkeypatch):
     monkeypatch.setattr(config, "AGENTE_MAX_ITERACOES", 2)
     pede_busca = mensagem(tool_calls=[tool_call("1", "buscar_produtos", '{"termo": "x"}')])

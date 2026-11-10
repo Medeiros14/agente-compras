@@ -119,13 +119,26 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
             nome = tc.function.name
             try:
                 argumentos = json.loads(tc.function.arguments or "{}")
-                resultado = await executar_ferramenta(nome, argumentos)
             except json.JSONDecodeError:
                 argumentos = {}
                 resultado = {
                     "ok": False,
                     "erro": {"codigo": "ARGUMENTOS_INVALIDOS", "mensagem": "Argumentos não são JSON válido."},
                 }
+            else:
+                if nome == "criar_requisicao" and requisicao_id is not None:
+                    # Uma requisição por pedido, garantida aqui e não só pelo prompt:
+                    # a segunda criação nem chega ao MCP.
+                    resultado = {
+                        "ok": False,
+                        "erro": {
+                            "codigo": "REQUISICAO_JA_CRIADA",
+                            "mensagem": f"A requisição #{requisicao_id} já foi criada para este pedido. "
+                            "Cada pedido gera uma única requisição.",
+                        },
+                    }
+                else:
+                    resultado = await executar_ferramenta(nome, argumentos)
 
             log.info("ferramenta=%s argumentos=%s ok=%s", nome, argumentos, resultado.get("ok"))
             chamadas.append(
