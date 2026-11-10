@@ -52,7 +52,7 @@ Pré-requisito: Docker com Compose.
 |---|---|
 | http://localhost:8080 | Chat |
 | http://localhost:8000/docs | Swagger do backend (`POST /requisicoes`, `GET /requisicoes`) |
-| http://localhost:8001/mcp | Servidor MCP |
+| http://localhost:8001/mcp | Endpoint do protocolo MCP (streamable HTTP), usado pelo backend. Não abre como página no navegador |
 
 As tabelas são criadas automaticamente por [db/init.sql](db/init.sql) na primeira subida. Esse script só roda com o volume vazio, então para recriar o banco do zero use `docker compose down -v`.
 
@@ -88,16 +88,16 @@ Quando o agente não cria requisição, `requisicao` vem `null` e `resposta` tra
 
 Os testes não precisam de chave de LLM nem de banco: a DummyJSON é mockada com `respx`, o Postgres por uma função falsa e o LLM por respostas roteirizadas.
 
-```bash
-# Ferramentas do MCP (sucesso, timeout, erro HTTP, estoque, orçamento, banco fora)
-cd mcp_server && pip install -r requirements-dev.txt && pytest
+Todos os comandos rodam **a partir da raiz do projeto**, em sequência, com Python 3.12. Cada pasta tem o seu `pytest.ini`, que o pytest encontra sozinho:
 
-# Loop do agente
-cd backend && pip install -r requirements-dev.txt && pytest
+```bash
+pip install -r mcp_server/requirements-dev.txt -r backend/requirements-dev.txt
+pytest mcp_server   # ferramentas do MCP: sucesso, timeout, erro HTTP, estoque, orçamento, banco fora
+pytest backend      # loop do agente
 ```
 
-Use Python 3.12. Sem Python local, rode dentro de um container:
-`docker run --rm -v "${PWD}/mcp_server:/app" -w /app python:3.12-slim sh -c "pip install -q -r requirements-dev.txt && pytest"`
+Sem Python local, rode tudo num container, também a partir da raiz:
+`docker run --rm -v "${PWD}:/repo" -w /repo python:3.12-slim sh -c "pip install -q -r mcp_server/requirements-dev.txt -r backend/requirements-dev.txt && pytest mcp_server && pytest backend"`
 
 O GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) roda `ruff check`, `ruff format --check`, os dois conjuntos de testes e o build do frontend com checagem de tipos.
 
@@ -124,6 +124,7 @@ Acertos: 5/5
 - **O modelo decide o fluxo.** O backend lista as ferramentas que o servidor MCP oferece e as repassa ao LLM. Depois só roda o loop ([backend/app/agente.py](backend/app/agente.py)): chama o modelo, executa as tool calls pedidas, devolve os resultados e repete até a resposta final, com limite de 8 iterações. Não há framework de agente.
 - **O modelo decide quando gravar.** Por isso a gravação é uma ferramenta, `criar_requisicao`. Ela recebe só `produto_id` e `quantidade`: o preço é consultado na DummyJSON dentro da ferramenta, e o total é calculado com `Decimal`. O LLM não tem como informar um preço.
 - **Validação no servidor, não só no prompt.** `criar_requisicao` confere estoque, quantidade mínima e o orçamento extraído do pedido contra os preços reais. Se algo falhar, nada é gravado.
+- **Uma requisição por pedido, garantida no código.** Se o modelo chamar `criar_requisicao` de novo depois de uma criação com sucesso, o loop não repassa a chamada ao MCP e devolve `REQUISICAO_JA_CRIADA` ao modelo. Isso não depende só do prompt.
 - **"Requisição criada" vem do resultado da ferramenta, não do texto do modelo.** Os números exibidos no chat vêm do banco. O texto do agente traz só a justificativa da escolha ou o motivo de não ter criado.
 - **Erros como dados.** Toda ferramenta devolve `{"ok": false, "erro": {"codigo", "mensagem"}}` em vez de lançar exceção, então o agente consegue explicar ao usuário o que aconteceu.
 - **Modelo padrão `anthropic/claude-haiku-5.5`**, escolhido por ser compatível com a política de Zero Data Retention da chave fornecida. Para trocar, use a variável `OPENROUTER_MODEL`.
@@ -131,6 +132,7 @@ Acertos: 5/5
 - **Valores em dólar sempre no formato `US$ 1.099,99`**: no cartão, nas mensagens de erro das ferramentas e no texto do agente (regra no prompt). Na API os valores continuam numéricos.
 - **SQL explícito com psycopg**, sem ORM: são duas tabelas, e o SQL fica visível e fácil de revisar.
 - **Portas presas ao localhost** (`127.0.0.1:8080`, `:8000`, `:8001`). Sem isso, qualquer máquina da rede poderia chamar o servidor MCP e executar `criar_requisicao` direto, sem passar pelo backend. Entre os containers, a comunicação segue pela rede interna do compose.
+- **Containers sem root.** O backend e o servidor MCP rodam com um usuário de sistema sem privilégios (`app`, uid 10001), criado nos Dockerfiles.
 - **nginx faz proxy de `/api` para o backend**, então não há CORS. Ele resolve o nome `backend` pelo DNS do Docker a cada requisição e por isso continua funcionando se o container for recriado.
 
 O prompt do agente está em [backend/app/prompt.py](backend/app/prompt.py), e as ferramentas em [mcp_server/app/server.py](mcp_server/app/server.py).
@@ -145,7 +147,9 @@ O prompt do agente está em [backend/app/prompt.py](backend/app/prompt.py), e as
 | OpenRouter: chave recusada / fora do ar / timeout | 502 `LLM_NAO_AUTORIZADO` / 502 `LLM_INDISPONIVEL` / 504 `LLM_TIMEOUT` |
 | Backend fora do ar | O chat mostra "O backend não está respondendo" |
 
-Para reproduzir, sem editar arquivos (variáveis do shell têm prioridade sobre o `.env`):
+Para reproduzir sem editar arquivos, defina a variável só para o comando: variáveis do shell têm prioridade sobre o `.env`.
+
+**bash** (Linux, macOS, Git Bash):
 
 ```bash
 DUMMYJSON_URL=http://10.255.255.1 docker compose up -d mcp   # timeout real da DummyJSON
@@ -153,6 +157,23 @@ DUMMYJSON_TIMEOUT=0.001 docker compose up -d mcp             # timeout imediato
 docker compose stop mcp                                     # MCP fora do ar
 OPENROUTER_API_KEY=invalida docker compose up -d backend     # chave recusada
 docker compose up -d mcp backend                            # restaura
+```
+
+**PowerShell** (Windows): a variável fica definida na sessão, então remova-a antes de restaurar.
+
+```powershell
+$env:DUMMYJSON_URL="http://10.255.255.1"; docker compose up -d mcp   # timeout real da DummyJSON
+Remove-Item Env:DUMMYJSON_URL
+
+$env:DUMMYJSON_TIMEOUT="0.001"; docker compose up -d mcp             # timeout imediato
+Remove-Item Env:DUMMYJSON_TIMEOUT
+
+docker compose stop mcp                                              # MCP fora do ar
+
+$env:OPENROUTER_API_KEY="invalida"; docker compose up -d backend     # chave recusada
+Remove-Item Env:OPENROUTER_API_KEY
+
+docker compose up -d mcp backend                                     # restaura
 ```
 
 ## Configuração
@@ -166,6 +187,7 @@ Tudo vem de variáveis de ambiente (veja [.env.example](.env.example)). Só `OPE
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | API compatível com OpenAI |
 | `LLM_TIMEOUT` | `30` | Timeout de cada chamada ao LLM (s) |
 | `AGENTE_MAX_ITERACOES` | `8` | Limite do loop de tool calling |
+| `MCP_TIMEOUT` | `20` | Timeout das chamadas do backend ao servidor MCP (s) |
 | `DUMMYJSON_URL` | `https://dummyjson.com` | Catálogo |
 | `DUMMYJSON_TIMEOUT` | `5` | Timeout de cada chamada à DummyJSON (s) |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `compras` | Banco (a `DATABASE_URL` é montada no compose) |
