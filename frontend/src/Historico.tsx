@@ -26,17 +26,17 @@ export function Historico({ requisicoes, erro, aberto, aoFechar }: Props) {
       )}
 
       <ul className="historico-lista">
-        {requisicoes.map((r) => (
-          <li key={r.id}>
+        {requisicoes.map((requisicao) => (
+          <li key={requisicao.id}>
             <div className="historico-linha">
-              <span className="historico-numero">Nº {String(r.id).padStart(4, "0")}</span>
-              <span className="historico-valor">{formatarDolar(r.valor_total)}</span>
+              <span className="historico-numero">Nº {String(requisicao.id).padStart(4, "0")}</span>
+              <span className="historico-valor">{formatarDolar(requisicao.valor_total)}</span>
             </div>
             <p className="historico-itens">
-              {r.itens.map((i) => `${i.quantidade}× ${i.titulo}`).join(", ")}
+              {requisicao.itens.map((item) => `${item.quantidade}× ${item.titulo}`).join(", ")}
             </p>
-            <time className="historico-data" dateTime={r.criado_em}>
-              {formatarData(r.criado_em)}
+            <time className="historico-data" dateTime={requisicao.criado_em}>
+              {formatarData(requisicao.criado_em)}
             </time>
           </li>
         ))}

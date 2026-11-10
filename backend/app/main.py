@@ -1,3 +1,5 @@
+"""API HTTP do agente: POST e GET /requisicoes."""
+
 import logging
 
 from fastapi import FastAPI, Request
@@ -14,7 +16,7 @@ app = FastAPI(title="Agente de compras")
 
 
 @app.exception_handler(ErroApi)
-async def tratar_erro_api(request: Request, erro: ErroApi) -> JSONResponse:
+async def tratar_erro_api(requisicao_http: Request, erro: ErroApi) -> JSONResponse:
     return JSONResponse(
         status_code=erro.status_http,
         content={"erro": {"codigo": erro.codigo, "mensagem": erro.mensagem}},
@@ -23,12 +25,7 @@ async def tratar_erro_api(request: Request, erro: ErroApi) -> JSONResponse:
 
 @app.post("/requisicoes", response_model=RespostaPedido)
 async def criar_requisicao(entrada: PedidoEntrada) -> RespostaPedido:
-    """Recebe o pedido em linguagem natural e deixa o agente resolver.
-
-    Se o agente criar a requisição (via ferramenta criar_requisicao), ela é lida
-    do banco e devolvida. Caso contrário, `requisicao` vem null e `resposta`
-    explica o que faltou.
-    """
+    """Roda o agente; `requisicao` vem null quando ele não cria nenhuma, e `resposta` explica."""
     resultado = await executar_agente(entrada.pedido)
 
     requisicao = None
@@ -48,5 +45,5 @@ async def listar_requisicoes() -> list[dict]:
 
 
 @app.get("/health")
-async def health() -> dict:
+async def verificar_saude() -> dict:
     return {"status": "ok"}

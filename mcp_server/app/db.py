@@ -13,15 +13,15 @@ async def salvar_requisicao(pedido: str, itens: list[dict], valor_total: Decimal
     Ao sair do bloco `async with` a conexão faz commit; se qualquer INSERT
     falhar, faz rollback, então nunca fica requisição sem itens.
     """
-    async with await psycopg.AsyncConnection.connect(config.DATABASE_URL, connect_timeout=5) as conn:
-        cursor = await conn.execute(
+    async with await psycopg.AsyncConnection.connect(config.DATABASE_URL, connect_timeout=5) as conexao:
+        cursor = await conexao.execute(
             "INSERT INTO requisicoes (pedido, valor_total) VALUES (%s, %s) RETURNING id",
             (pedido, valor_total),
         )
         (requisicao_id,) = await cursor.fetchone()
 
         for item in itens:
-            await conn.execute(
+            await conexao.execute(
                 """
                 INSERT INTO itens_requisicao
                     (requisicao_id, produto_id, titulo, quantidade, preco_unitario, subtotal)

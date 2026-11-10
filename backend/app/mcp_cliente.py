@@ -12,7 +12,7 @@ from app import config
 
 @asynccontextmanager
 async def abrir_sessao():
-    """Abre uma sessão MCP via streamable HTTP (uma por pedido)."""
+    """Abre uma sessão MCP por pedido, via streamable HTTP."""
     async with streamablehttp_client(config.MCP_URL, timeout=config.MCP_TIMEOUT) as (
         leitura,
         escrita,
@@ -26,11 +26,7 @@ async def abrir_sessao():
 
 
 async def listar_ferramentas(sessao: ClientSession) -> list[dict]:
-    """Converte as ferramentas do MCP para o formato de "tools" da API da OpenAI.
-
-    O backend não conhece as ferramentas pelo nome: ele repassa ao modelo o que
-    o servidor MCP oferece (nome, descrição e JSON Schema dos argumentos).
-    """
+    """Repassa ao modelo, no formato "tools" da OpenAI, as ferramentas que o MCP oferece."""
     resultado = await sessao.list_tools()
     return [
         {
@@ -46,12 +42,12 @@ async def listar_ferramentas(sessao: ClientSession) -> list[dict]:
 
 
 async def chamar_ferramenta(sessao: ClientSession, nome: str, argumentos: dict) -> dict:
-    """Executa a ferramenta e devolve sempre um dict no formato {"ok": ..., ...}."""
+    """Executa a ferramenta e devolve sempre um dict com "ok"."""
     resultado = await sessao.call_tool(nome, argumentos)
     texto = "".join(bloco.text for bloco in resultado.content if bloco.type == "text")
 
     if resultado.isError:
-        # Ex.: argumentos que não passam na validação do schema (quantidade 0).
+        # O FastMCP rejeitou os argumentos pelo schema antes de rodar a ferramenta.
         return {"ok": False, "erro": {"codigo": "ERRO_NA_FERRAMENTA", "mensagem": texto}}
     try:
         return json.loads(texto)

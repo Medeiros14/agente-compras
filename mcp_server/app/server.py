@@ -20,7 +20,6 @@ mcp = FastMCP(
     "compras",
     host="0.0.0.0",
     port=config.MCP_PORT,
-    # Sem estado entre chamadas: cada requisição HTTP é independente.
     stateless_http=True,
     json_response=True,
 )
@@ -36,8 +35,8 @@ def dinheiro(valor) -> Decimal:
 
 
 def formatar_dolar(valor) -> str:
-    """Formato usado em toda a aplicação: US$ 1.099,99."""
-    texto = f"{dinheiro(valor):,.2f}"  # 1,099.99
+    """US$ 1.099,99: formata no padrão americano e troca os separadores."""
+    texto = f"{dinheiro(valor):,.2f}"
     return "US$ " + texto.replace(",", "_").replace(".", ",").replace("_", ".")
 
 
@@ -137,7 +136,7 @@ async def criar_requisicao(
             }
         )
 
-    valor_total = sum((i["subtotal"] for i in itens_validados), Decimal("0.00"))
+    valor_total = sum((item["subtotal"] for item in itens_validados), Decimal("0.00"))
     if orcamento_total_max is not None and valor_total > dinheiro(orcamento_total_max):
         return erro(
             "ORCAMENTO_EXCEDIDO",
@@ -156,17 +155,17 @@ async def criar_requisicao(
         "valor_total": float(valor_total),
         "itens": [
             {
-                **i,
-                "preco_unitario": float(i["preco_unitario"]),
-                "subtotal": float(i["subtotal"]),
+                **item,
+                "preco_unitario": float(item["preco_unitario"]),
+                "subtotal": float(item["subtotal"]),
             }
-            for i in itens_validados
+            for item in itens_validados
         ],
     }
 
 
 @mcp.custom_route("/health", methods=["GET"])
-async def health(request: Request) -> JSONResponse:
+async def verificar_saude(requisicao_http: Request) -> JSONResponse:
     """Usado pelo healthcheck do docker compose."""
     return JSONResponse({"status": "ok"})
 

@@ -80,7 +80,7 @@ def conferir_requisicao(caso: dict, requisicao: dict) -> list[str]:
     problemas = []
     itens = requisicao["itens"]
 
-    quantidade = sum(i["quantidade"] for i in itens)
+    quantidade = sum(item["quantidade"] for item in itens)
     if quantidade != caso["quantidade"]:
         problemas.append(f"quantidade {quantidade}, esperado {caso['quantidade']}")
 
@@ -111,7 +111,7 @@ def avaliar(caso: dict) -> tuple[bool, str]:
         return False, f"HTTP {status}: {resposta.get('erro', resposta)}"
 
     requisicao = resposta["requisicao"]
-    ferramentas = " → ".join(c["nome"] for c in resposta["ferramentas_chamadas"])
+    ferramentas = " → ".join(chamada["nome"] for chamada in resposta["ferramentas_chamadas"])
 
     if not caso["deve_criar"]:
         if requisicao is None:
@@ -123,7 +123,7 @@ def avaliar(caso: dict) -> tuple[bool, str]:
     problemas = conferir_requisicao(caso, requisicao)
     if problemas:
         return False, "; ".join(problemas)
-    itens = ", ".join(f"{i['quantidade']}x {i['titulo']}" for i in requisicao["itens"])
+    itens = ", ".join(f"{item['quantidade']}x {item['titulo']}" for item in requisicao["itens"])
     return (
         True,
         f"#{requisicao['id']}: {itens}, total {formatar_dolar(requisicao['valor_total'])} [{ferramentas}]",

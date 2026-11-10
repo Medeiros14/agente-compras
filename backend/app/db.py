@@ -38,8 +38,8 @@ async def _consultar(requisicao_id: int | None) -> list[dict]:
     try:
         async with await psycopg.AsyncConnection.connect(
             config.DATABASE_URL, connect_timeout=5, row_factory=dict_row
-        ) as conn:
-            cursor = await conn.execute(SQL_REQUISICOES, {"id": requisicao_id})
+        ) as conexao:
+            cursor = await conexao.execute(SQL_REQUISICOES, {"id": requisicao_id})
             return await cursor.fetchall()
     except psycopg.Error as e:
         raise ErroApi(503, "BANCO_INDISPONIVEL", "Não foi possível consultar o banco de dados.") from e

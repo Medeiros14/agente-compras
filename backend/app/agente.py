@@ -85,12 +85,17 @@ def _erro_da_openrouter(e: openai.APIError) -> ErroApi:
 
 
 async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: str) -> ResultadoAgente:
-    """O loop do agente. `executar_ferramenta(nome, argumentos)` devolve um dict."""
+    """Loop do agente: chama o modelo, executa as tool calls pedidas e repete até a resposta final.
+
+    `executar_ferramenta(nome, argumentos)` devolve um dict {"ok": ...}. Só o resultado
+    de criar_requisicao define se a requisição foi criada, e uma segunda chamada a ela
+    no mesmo pedido não é executada.
+    """
     mensagens = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": pedido},
     ]
-    chamadas = []
+    ferramentas_chamadas = []
     requisicao_id = None
 
     for _ in range(config.AGENTE_MAX_ITERACOES):
@@ -98,7 +103,7 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
 
         # Sem tool calls: o modelo terminou e esta é a resposta final.
         if not mensagem.tool_calls:
-            return ResultadoAgente(mensagem.content or "", requisicao_id, chamadas)
+            return ResultadoAgente(mensagem.content or "", requisicao_id, ferramentas_chamadas)
 
         mensagens.append(
             {
@@ -106,19 +111,19 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
                 "content": mensagem.content,
                 "tool_calls": [
                     {
-                        "id": tc.id,
+                        "id": chamada.id,
                         "type": "function",
-                        "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                        "function": {"name": chamada.function.name, "arguments": chamada.function.arguments},
                     }
-                    for tc in mensagem.tool_calls
+                    for chamada in mensagem.tool_calls
                 ],
             }
         )
 
-        for tc in mensagem.tool_calls:
-            nome = tc.function.name
+        for chamada in mensagem.tool_calls:
+            nome = chamada.function.name
             try:
-                argumentos = json.loads(tc.function.arguments or "{}")
+                argumentos = json.loads(chamada.function.arguments or "{}")
             except json.JSONDecodeError:
                 argumentos = {}
                 resultado = {
@@ -141,7 +146,7 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
                     resultado = await executar_ferramenta(nome, argumentos)
 
             log.info("ferramenta=%s argumentos=%s ok=%s", nome, argumentos, resultado.get("ok"))
-            chamadas.append(
+            ferramentas_chamadas.append(
                 {
                     "nome": nome,
                     "argumentos": argumentos,
@@ -158,7 +163,7 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
             mensagens.append(
                 {
                     "role": "tool",
-                    "tool_call_id": tc.id,
+                    "tool_call_id": chamada.id,
                     "content": json.dumps(resultado, ensure_ascii=False),
                 }
             )
@@ -168,7 +173,7 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
         return ResultadoAgente(
             "A requisição foi criada, mas o agente não concluiu a justificativa da escolha.",
             requisicao_id,
-            chamadas,
+            ferramentas_chamadas,
         )
     raise ErroApi(
         502,

@@ -66,8 +66,11 @@ async def test_loop_executa_tools_pedidas_e_captura_requisicao():
 
     assert resultado.requisicao_id == 7
     assert resultado.resposta == "Requisição #7 criada."
-    assert [c[0] for c in chamadas] == ["buscar_produtos", "criar_requisicao"]
-    assert [c["nome"] for c in resultado.ferramentas_chamadas] == ["buscar_produtos", "criar_requisicao"]
+    assert [nome for nome, _ in chamadas] == ["buscar_produtos", "criar_requisicao"]
+    assert [chamada["nome"] for chamada in resultado.ferramentas_chamadas] == [
+        "buscar_produtos",
+        "criar_requisicao",
+    ]
     # O resultado da ferramenta volta para o modelo como mensagem "tool"
     ultima_conversa = llm.recebido[-1]["messages"]
     assert ultima_conversa[-1]["role"] == "tool"
@@ -123,7 +126,7 @@ async def test_segunda_criacao_de_requisicao_e_bloqueada():
     resultado = await agente.rodar_loop(llm, [], executar, "3 laptops")
 
     # A segunda chamada não chegou à ferramenta (ao MCP)
-    assert [c[0] for c in chamadas] == ["criar_requisicao"]
+    assert [nome for nome, _ in chamadas] == ["criar_requisicao"]
     assert resultado.requisicao_id == 7
     assert resultado.ferramentas_chamadas[1]["ok"] is False
     assert resultado.ferramentas_chamadas[1]["erro"] == "REQUISICAO_JA_CRIADA"

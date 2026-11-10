@@ -69,7 +69,6 @@ export default function App() {
     enviar(texto);
   }
 
-  // Enter envia; Shift+Enter quebra a linha.
   function aoTeclar(evento: KeyboardEvent<HTMLTextAreaElement>) {
     if (evento.key === "Enter" && !evento.shiftKey && !evento.nativeEvent.isComposing) {
       evento.preventDefault();
@@ -105,27 +104,27 @@ export default function App() {
           <section className="conversa" aria-live="polite">
             {mensagens.length === 0 && !carregando && <EstadoVazio aoEscolher={enviar} />}
 
-            {mensagens.map((m, i) => {
-              if (m.tipo === "usuario") {
+            {mensagens.map((mensagem, indice) => {
+              if (mensagem.tipo === "usuario") {
                 return (
-                  <div key={i} className="pedido">
-                    <p>{m.texto}</p>
+                  <div key={indice} className="pedido">
+                    <p>{mensagem.texto}</p>
                   </div>
                 );
               }
 
-              if (m.tipo === "erro") {
+              if (mensagem.tipo === "erro") {
                 return (
-                  <div key={i} className="resposta">
+                  <div key={indice} className="resposta">
                     <div className="falha" role="alert">
                       <IconeAlerta className="icone-20 falha-icone" />
                       <div>
                         <p className="falha-titulo">Não foi possível processar o pedido</p>
-                        <p className="falha-texto">{m.texto}</p>
+                        <p className="falha-texto">{mensagem.texto}</p>
                         <button
                           type="button"
                           className="botao-secundario"
-                          onClick={() => enviar(m.pedido)}
+                          onClick={() => enviar(mensagem.pedido)}
                           disabled={carregando}
                         >
                           <IconeRepetir className="icone-16" />
@@ -137,9 +136,9 @@ export default function App() {
                 );
               }
 
-              const { resposta, requisicao, ferramentas_chamadas } = m.resposta;
+              const { resposta, requisicao, ferramentas_chamadas } = mensagem.resposta;
               return (
-                <div key={i} className="resposta">
+                <div key={indice} className="resposta">
                   {requisicao ? (
                     <>
                       <CartaoRequisicao requisicao={requisicao} />
@@ -168,7 +167,7 @@ export default function App() {
               <textarea
                 ref={campo}
                 value={texto}
-                onChange={(e) => setTexto(e.target.value)}
+                onChange={(evento) => setTexto(evento.target.value)}
                 onKeyDown={aoTeclar}
                 placeholder="Ex.: 3 laptops até US$ 2.000 cada"
                 maxLength={1000}

@@ -1,8 +1,8 @@
-class ErroApi(Exception):
-    """Falha que impede a API de responder (LLM, MCP ou banco fora do ar).
+"""Erro da API com status HTTP, código e mensagem para o usuário."""
 
-    É convertida em {"erro": {"codigo", "mensagem"}} pelo handler em main.py.
-    """
+
+class ErroApi(Exception):
+    """Falha que impede a resposta; main.py a converte em {"erro": {"codigo", "mensagem"}}."""
 
     def __init__(self, status_http: int, codigo: str, mensagem: str):
         super().__init__(mensagem)

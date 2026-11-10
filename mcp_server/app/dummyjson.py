@@ -31,13 +31,13 @@ def resumir_produto(produto: dict) -> dict:
     }
 
 
-async def _get(caminho: str, params: dict | None = None) -> dict | None:
-    """Faz GET na DummyJSON. Retorna None em 404 e levanta ErroDummyJSON nas falhas."""
+async def _consultar(caminho: str, parametros: dict | None = None) -> dict | None:
+    """GET na DummyJSON: None em 404, ErroDummyJSON nas demais falhas."""
     try:
         async with httpx.AsyncClient(
             base_url=config.DUMMYJSON_URL, timeout=config.DUMMYJSON_TIMEOUT
-        ) as client:
-            resposta = await client.get(caminho, params=params)
+        ) as cliente:
+            resposta = await cliente.get(caminho, params=parametros)
     except httpx.TimeoutException as e:
         raise ErroDummyJSON(
             "DUMMYJSON_TIMEOUT",
@@ -66,13 +66,13 @@ async def _get(caminho: str, params: dict | None = None) -> dict | None:
 
 
 async def buscar(termo: str) -> list[dict]:
-    dados = await _get("/products/search", params={"q": termo, "limit": 20})
+    dados = await _consultar("/products/search", parametros={"q": termo, "limit": 20})
     produtos = (dados or {}).get("products", [])
-    return [resumir_produto(p) for p in produtos]
+    return [resumir_produto(produto) for produto in produtos]
 
 
 async def obter_produto(produto_id: int) -> dict:
-    dados = await _get(f"/products/{produto_id}")
+    dados = await _consultar(f"/products/{produto_id}")
     if dados is None:
         raise ErroDummyJSON(
             "PRODUTO_NAO_ENCONTRADO",
