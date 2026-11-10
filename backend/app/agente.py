@@ -142,7 +142,7 @@ async def rodar_loop(llm, ferramentas: list[dict], executar_ferramenta, pedido: 
     # Limite de iterações atingido.
     if requisicao_id is not None:
         return ResultadoAgente(
-            f"Requisição #{requisicao_id} criada, mas o agente não concluiu a resposta.",
+            "A requisição foi criada, mas o agente não concluiu a justificativa da escolha.",
             requisicao_id,
             chamadas,
         )
