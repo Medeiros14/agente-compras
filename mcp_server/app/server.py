@@ -35,6 +35,12 @@ def dinheiro(valor) -> Decimal:
     return Decimal(str(valor)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def formatar_dolar(valor) -> str:
+    """Formato usado em toda a aplicação: US$ 1.099,99."""
+    texto = f"{dinheiro(valor):,.2f}"  # 1,099.99
+    return "US$ " + texto.replace(",", "_").replace(".", ",").replace("_", ".")
+
+
 class ItemPedido(BaseModel):
     produto_id: int = Field(description="ID do produto na DummyJSON, obtido em buscar_produtos.")
     quantidade: int = Field(gt=0, description="Quantidade de unidades desejada.")
@@ -117,8 +123,8 @@ async def criar_requisicao(
         if orcamento_unitario_max is not None and preco > dinheiro(orcamento_unitario_max):
             return erro(
                 "ORCAMENTO_EXCEDIDO",
-                f"'{titulo}' custa US$ {preco} por unidade, acima do limite de "
-                f"US$ {dinheiro(orcamento_unitario_max)}.",
+                f"'{titulo}' custa {formatar_dolar(preco)} por unidade, acima do limite de "
+                f"{formatar_dolar(orcamento_unitario_max)}.",
             )
 
         itens_validados.append(
@@ -135,7 +141,8 @@ async def criar_requisicao(
     if orcamento_total_max is not None and valor_total > dinheiro(orcamento_total_max):
         return erro(
             "ORCAMENTO_EXCEDIDO",
-            f"O total seria US$ {valor_total}, acima do orçamento de US$ {dinheiro(orcamento_total_max)}.",
+            f"O total seria {formatar_dolar(valor_total)}, acima do orçamento de "
+            f"{formatar_dolar(orcamento_total_max)}.",
         )
 
     try:

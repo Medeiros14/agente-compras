@@ -168,6 +168,7 @@ async def test_criar_requisicao_acima_do_orcamento_nao_grava(dummyjson, banco_fa
 
     assert resultado["ok"] is False
     assert resultado["erro"]["codigo"] == "ORCAMENTO_EXCEDIDO"
+    assert "US$ 1.999,99" in resultado["erro"]["mensagem"]  # formato padrão da aplicação
     assert banco_falso == []
 
 

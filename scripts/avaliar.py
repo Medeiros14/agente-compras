@@ -51,6 +51,12 @@ CASOS = [
 ]
 
 
+def formatar_dolar(valor: float) -> str:
+    """Mesmo formato do chat: US$ 1.099,99."""
+    texto = f"{valor:,.2f}"
+    return "US$ " + texto.replace(",", "_").replace(".", ",").replace("_", ".")
+
+
 def http_json(url: str, corpo: dict | None = None) -> tuple[int, dict]:
     dados = json.dumps(corpo).encode("utf-8") if corpo is not None else None
     cabecalhos = {
@@ -92,10 +98,10 @@ def conferir_requisicao(caso: dict, requisicao: dict) -> list[str]:
         if item["quantidade"] < produto.get("minimumOrderQuantity", 1):
             problemas.append(f"{nome}: abaixo do pedido mínimo ({produto.get('minimumOrderQuantity')})")
         if "max_unitario" in caso and item["preco_unitario"] > caso["max_unitario"]:
-            problemas.append(f"{nome}: US$ {item['preco_unitario']} acima do limite por unidade")
+            problemas.append(f"{nome}: {formatar_dolar(item['preco_unitario'])} acima do limite por unidade")
 
     if "max_total" in caso and requisicao["valor_total"] > caso["max_total"]:
-        problemas.append(f"total US$ {requisicao['valor_total']} acima do orçamento")
+        problemas.append(f"total {formatar_dolar(requisicao['valor_total'])} acima do orçamento")
     return problemas
 
 
@@ -118,7 +124,10 @@ def avaliar(caso: dict) -> tuple[bool, str]:
     if problemas:
         return False, "; ".join(problemas)
     itens = ", ".join(f"{i['quantidade']}x {i['titulo']}" for i in requisicao["itens"])
-    return True, f"#{requisicao['id']}: {itens}, total US$ {requisicao['valor_total']} [{ferramentas}]"
+    return (
+        True,
+        f"#{requisicao['id']}: {itens}, total {formatar_dolar(requisicao['valor_total'])} [{ferramentas}]",
+    )
 
 
 def main() -> int:

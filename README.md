@@ -13,10 +13,24 @@ Você escreve no chat o que precisa, por exemplo *"Preciso de 3 laptops para o t
 
 Pré-requisito: Docker com Compose.
 
-```bash
-cp .env.example .env          # depois preencha OPENROUTER_API_KEY no .env
-docker compose up --build
-```
+1. Crie o `.env` a partir do exemplo:
+
+   ```bash
+   cp .env.example .env          # Linux/macOS
+   copy .env.example .env        # Windows (cmd ou PowerShell)
+   ```
+
+2. Abra o `.env` e coloque **a sua chave da OpenRouter** em `OPENROUTER_API_KEY=`. A chave não vem no repositório, e o `.env` está no `.gitignore`.
+
+   O modelo padrão é `anthropic/claude-haiku-5.5`, escolhido por ser compatível com a restrição de Zero Data Retention (ZDR) da chave fornecida para o case (o `openai/gpt-4o-mini` é bloqueado por ela). Com outra chave, troque o modelo em `OPENROUTER_MODEL`, desde que ele suporte tool calling.
+
+3. Suba os 4 serviços:
+
+   ```bash
+   docker compose up --build
+   ```
+
+   Quando `docker compose ps` mostrar os 4 serviços como `healthy`, abra o chat.
 
 | Endereço | O que é |
 |---|---|
@@ -81,7 +95,7 @@ python scripts/avaliar.py
 
 ```
 ✓ 1. Preciso de 3 laptops para o time de vendas, até US$ 2.000 cada.  (8s)
-     #9: 3x Lenovo Yoga 920, total US$ 3299.97 [buscar_produtos → criar_requisicao]
+     #9: 3x Lenovo Yoga 920, total US$ 3.299,97 [buscar_produtos → criar_requisicao]
 ...
 ✓ 5. Preciso de 100 laptops até US$ 2.000 cada.  (6s)
      não criou, como esperado [buscar_produtos]
@@ -98,6 +112,7 @@ Acertos: 5/5
 - **Erros como dados.** Toda ferramenta devolve `{"ok": false, "erro": {"codigo", "mensagem"}}` em vez de lançar exceção, então o agente consegue explicar ao usuário o que aconteceu.
 - **Modelo padrão `anthropic/claude-haiku-5.5`**, escolhido por ser compatível com a política de Zero Data Retention da chave fornecida. Para trocar, use a variável `OPENROUTER_MODEL`.
 - **`mcp==1.30.0`.** Na linha 2.x do SDK o `FastMCP` foi renomeado para `MCPServer`, então fixei a última 1.x, em que o `FastMCP` é a API oficial.
+- **Valores em dólar sempre no formato `US$ 1.099,99`**: no cartão, nas mensagens de erro das ferramentas e no texto do agente (regra no prompt). Na API os valores continuam numéricos.
 - **SQL explícito com psycopg**, sem ORM: são duas tabelas, e o SQL fica visível e fácil de revisar.
 - **nginx faz proxy de `/api` para o backend**, então não há CORS. Ele resolve o nome `backend` pelo DNS do Docker a cada requisição e por isso continua funcionando se o container for recriado.
 
