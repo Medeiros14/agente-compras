@@ -1,3 +1,5 @@
+"""System prompt do agente de compras, enviado como primeira mensagem em cada pedido."""
+
 SYSTEM_PROMPT = """\
 Você é um agente de compras corporativas. Sua função é transformar o pedido de \
 um colaborador em uma requisição de compra, usando somente produtos reais do \
