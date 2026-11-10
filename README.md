@@ -185,8 +185,8 @@ scripts/avaliar.py   avaliação do agente com 5 pedidos
 
 Usei IA como par de programação, com dois papéis separados:
 
-- **Claude Code (no VS Code)** escreveu o código, etapa por etapa. Antes de qualquer código, pedi o plano (estrutura, schema, contrato da API e integração com o MCP) e só aprovei depois de revisar. A cada etapa ele testava, eu revisava e fazia o commit.
-- **Claude (app desktop)** atuou como revisor independente: lia o código, rodava os testes e o pedido de exemplo por conta própria, testava a tela no navegador e simulava falhas antes de eu aprovar cada etapa.
+- **Claude Code (no VS Code, com Claude Opus 5.5)** escreveu o código, etapa por etapa. Antes de qualquer código, pedi o plano (estrutura, schema, contrato da API e integração com o MCP) e só aprovei depois de revisar. A cada etapa ele testava, eu revisava e fazia o commit.
+- **Claude (app desktop, com Claude Opus 5.5)** atuou como revisor independente: lia o código, rodava os testes e o pedido de exemplo por conta própria, testava a tela no navegador e simulava falhas antes de eu aprovar cada etapa.
 
 Decisões e correções que saíram dessa revisão:
 
