@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-compras}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-compras}
+      POSTGRES_DB: ${POSTGRES_DB:-compras}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts desta pasta rodam na primeira inicialização (volume vazio)
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
